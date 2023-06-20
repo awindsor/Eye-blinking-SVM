@@ -312,72 +312,63 @@ def prev_to_csv(X,scaler=scaler,model=model):
     newdata = DataFrame(predictions, index=X.index, columns=["blink"])
     return newdata
 
-previsioni=prev_to_csv(df_fin)
+previsions=prev_to_csv(df_fin)
 try:
-	previsioni.to_csv(
+	previsions.to_csv(
 		"prevision/output_SVM_{}.csv".format(args["video"][6:-4]),index=True, header=True)
 except:
-	previsioni.to_csv(
+	previsions.to_csv(
 		"prevision/output_SVM_{}.csv".format(args["video"][8:-4]), index=True, header=True)
 
-##########################################################################
-##########################################################################
-#unisco ML con blink_ajust
-####################################################################
-#####################################################################à
-DATA = previsioni
-################################################
+# Merge ML with blink_ajust
+
+DATA = predictions
 FRAME_LIST = list(DATA.index)
 BLINK_LIST = list(DATA.blink)
 
-#sostituisco 0.0 o 1.0 sparsi
+# Replace scattered 0.0 or 1.0
 for n in range(len(BLINK_LIST)):
-    #trovo il primo 1.0
-    if BLINK_LIST[n]==1.0:
+    # Find the first 1.0
+    if BLINK_LIST[n] == 1.0:
         i = copy.deepcopy(n)
-        #correggi 1.0 isolati: se è un 1.0 singolo (o doppio) diventa 0.0 (o 0.0 0.0)
-        if sum(BLINK_LIST[i:i+6])<3.0:
-            BLINK_LIST[i]=0.0
+        # Fix isolated 1.0: if it's a single (or double) 1.0, make it 0.0 (or 0.0 0.0)
+        if sum(BLINK_LIST[i:i+6]) < 3.0:
+            BLINK_LIST[i] = 0.0
         else:
-            #correggi 0.0 isolati: se ci sono 0.0 singoli (o doppi) (o tripli) diventano 1.0 (o 1.0 1.0) (o 1.0 1.0 1.0)
-            while (sum(BLINK_LIST[i:i+6])>=3.0):
-                BLINK_LIST[i+1]=1.0
-                BLINK_LIST[i+2]=1.0
-                i+=1
+            # Fix isolated 0.0: if there are single (or double) (or triple) 0.0, make them 1.0 (or 1.0 1.0) (or 1.0 1.0 1.0)
+            while sum(BLINK_LIST[i:i+6]) >= 3.0:
+                BLINK_LIST[i+1] = 1.0
+                BLINK_LIST[i+2] = 1.0
+                i += 1
 
-#ora costruisco singoli 1.0 corrispondenti al blink
+# Now create individual 1.0 corresponding to the blink
 for n in range(len(BLINK_LIST)):
-    #trovo il primo 1.0
-    if BLINK_LIST[n]==1.0:
+    # Find the first 1.0
+    if BLINK_LIST[n] == 1.0:
         i = copy.deepcopy(n)
-        while (BLINK_LIST[i+1]==1.0):
-            BLINK_LIST[i+1]=0.0
-            i+=1
+        while BLINK_LIST[i+1] == 1.0:
+            BLINK_LIST[i+1] = 0.0
+            i += 1
 
-#scala gli 1.0 di 5 frame per posizionarlo alla chiusura circa
-BLINK_LIST=[0.0,0.0,0.0,0.0,0.0]+BLINK_LIST[:len(BLINK_LIST)-5]
-
+# Scale the 1.0 by 5 frames to position it approximately at the closure
+BLINK_LIST = [0.0, 0.0, 0.0, 0.0, 0.0] + BLINK_LIST[:len(BLINK_LIST)-5]
 
 BLINK_LIST = pd.DataFrame(BLINK_LIST, index=FRAME_LIST)
-BLINK_LIST.index.name='frame'
+BLINK_LIST.index.name = 'frame'
 BLINK_LIST.columns = ['blink']
 
-#########################################################################################
-########################################################################################
-#unisco blink_ajust con video_shocase
-######################################################################################
-###################################################################################
-result=BLINK_LIST
-######################################################################
-raw_data=pd.read_csv("tmp.csv", index_col="frame")
-raw_data_1=raw_data.threshold
-SHOWCASE_DATA=pd.concat([raw_data_1, result,LIST_EAR_PER_TABELLA_PREVISIONI], axis=1 )
-SHOWCASE_DATA=SHOWCASE_DATA.fillna(0)
-SHOWCASE_DATA.columns=["threshold","blink","ear_norm"]
+# Merge blink_ajust with video_shocase
+
+result = BLINK_LIST
+raw_data = pd.read_csv("tmp.csv", index_col="frame")
+raw_data_1 = raw_data.threshold
+SHOWCASE_DATA = pd.concat([raw_data_1, result, LIST_EAR_PER_TABELLA_PREVISIONI], axis=1)
+SHOWCASE_DATA = SHOWCASE_DATA.fillna(0)
+SHOWCASE_DATA.columns = ["threshold", "blink", "ear_norm"]
 try:
-	SHOWCASE_DATA.to_csv(
-		"prevision/data_final_{}.csv".format(args["video"][6:-4]),index=True, header=True)
+    SHOWCASE_DATA.to_csv(
+        "prevision/data_final_{}.csv".format(args["video"][6:-4]), index=True, header=True)
 except:
-	SHOWCASE_DATA.to_csv(
-		"prevision/data_final_{}.csv".format(args["video"][8:-4]), index=True, header=True)
+    SHOWCASE_DATA.to_csv(
+        "prevision/data_final_{}.csv".format(args["video"][8:-4]), index=True, header=True)
 print("end")
